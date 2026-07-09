@@ -28,6 +28,33 @@
       (is (= kid (-> doc :verificationMethod first :id)))
       (is (= [kid] (:authentication doc))))))
 
+(deftest did-key->public-key-rejects-malformed-input
+  ;; did-key->public-key's own guard paths had zero direct test coverage --
+  ;; only the happy-path roundtrip (valid pubkey -> did:key -> back) was
+  ;; tested. Each of these guards is a real, hand-rolled check that fails
+  ;; closed by throwing -- verify each one actually does.
+  (is (thrown? clojure.lang.ExceptionInfo
+               (did/did-key->public-key "did:web:example.com"))
+      "wrong method (not did:key)")
+  (is (thrown? clojure.lang.ExceptionInfo
+               (did/did-key->public-key "did:key:xNotBase58btcPrefixed"))
+      "method-id doesn't start with the 'z' multibase prefix")
+  (is (thrown? clojure.lang.ExceptionInfo
+               (did/did-key->public-key "did:key:zInvalid0OIl"))
+      "base58btc-decode itself throws on a character outside its alphabet
+       (0, O, I, l are excluded from base58btc)")
+  (is (thrown? clojure.lang.ExceptionInfo
+               (did/did-key->public-key
+                (str "did:key:z" (did/base58btc (concat [0xed 0x01] (range 10))))))
+      "decoded bytes too short to be a 34-byte (2-byte multicodec + 32-byte
+       key) Ed25519 did:key")
+  (is (thrown? clojure.lang.ExceptionInfo
+               (did/did-key->public-key
+                (str "did:key:z" (did/base58btc (concat [0x00 0x00] (range 32))))))
+      "decoded bytes ARE 34 bytes, but the multicodec prefix isn't 0xed01
+       (Ed25519) -- e.g. a different key type's did:key must not be
+       silently accepted as if it were Ed25519"))
+
 (deftest did-web-helpers
   (is (= "did:web:example.com:users:alice"
          (did/did-web "example.com" "users" "alice")))
