@@ -1,6 +1,6 @@
 (ns did.core
   "EDN-first helpers for DID identifiers and DID Documents."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def did-context "https://www.w3.org/ns/did/v1")
 (def context-key (keyword "@context"))
