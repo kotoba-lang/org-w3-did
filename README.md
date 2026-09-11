@@ -88,7 +88,7 @@ record it before writing the parser.
 ## Test
 
 ```bash
-clojure -M:test
+kbb -M:test
 ```
 
 ## License
